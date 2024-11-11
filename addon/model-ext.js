@@ -1,10 +1,9 @@
 import Model from '@ember-data/model';
 import Tracker from './tracker';
 
-Model.reopen({
-
-  init(){
-    this._super(...arguments);
+export default class ModelExt extends Model {
+  constructor() {
+    super(...arguments);
     if (Tracker.isAutoSaveEnabled(this)) {
       this.initTracking();
     }
@@ -15,7 +14,7 @@ Model.reopen({
 
     this.setupTrackerMetaData();
     this.setupUnknownRelationshipLoadObservers();
-  },
+  }
 
   /**
    * Did an attribute/association change?
@@ -26,7 +25,7 @@ Model.reopen({
    */
   didChange(key, changed, options) {
     return Tracker.didChange(this, key, changed, options);
-  },
+  }
 
   /**
    * Did any attribute/association change?
@@ -49,7 +48,7 @@ Model.reopen({
       }
     }
     return changed;
-  },
+  }
 
   /**
    * Rollback all the changes on this model, for the keys you are
@@ -69,13 +68,13 @@ Model.reopen({
     let rollbackData = Tracker.rollbackData(this, trackerInfo);
     let normalized = Tracker.normalize(this, rollbackData);
     this.store.push(normalized);
-  },
+  }
 
   // alias for saveChanges method
   startTrack() {
     this.initTracking();
     this.saveChanges();
-  },
+  }
 
   // Ember Data DS.Model events
   // http://api.emberjs.com/ember-data/3.10/classes/DS.Model/events
@@ -84,31 +83,31 @@ Model.reopen({
   // https://github.com/emberjs/rfcs/blob/master/text/0329-deprecated-ember-evented-in-ember-data.md
   // Related: https://github.com/emberjs/rfcs/pull/329
 
-  initTracking(){
+  initTracking() {
 
-      this.didCreate = () => {
-        this.saveOnCreate();
-      }
+    this.didCreate = () => {
+      this.saveOnCreate();
+    }
 
-      this.didUpdate  = () => {
-        this.saveOnUpdate();
-      }
+    this.didUpdate = () => {
+      this.saveOnUpdate();
+    }
 
-      this.didDelete = () => {
-        this.clearSavedAttributes();
-      }
+    this.didDelete = () => {
+      this.clearSavedAttributes();
+    }
 
-      this.ready = () => {
-        this.setupTrackerMetaData();
-        this.setupUnknownRelationshipLoadObservers();
-      },
+    this.ready = () => {
+      this.setupTrackerMetaData();
+      this.setupUnknownRelationshipLoadObservers();
+    }
 
     Tracker.setupTracking(this);
-  },
+  }
 
   /**
    * Save the current state of the model
-   *
+   * 
    * NOTE: This is needed when manually pushing data
    * to the store and ussing Ember < 2.10
    *
@@ -120,11 +119,11 @@ Model.reopen({
     Tracker.setupTracking(this);
     Tracker.saveChanges(this, options);
     Tracker.triggerIsDirtyReset(this);
-  },
+  }
 
   saveTrackerChanges(options) {
     this.saveChanges(options);
-  },
+  }
 
   /**
    * Get value of the last known value tracker is saving for this key
@@ -134,7 +133,7 @@ Model.reopen({
    */
   savedTrackerValue(key) {
     return Tracker.lastValue(this, key);
-  },
+  }
 
   // save state when model is loaded or created if using auto save
   setupTrackerMetaData() {
@@ -145,46 +144,46 @@ Model.reopen({
     if (Tracker.isAutoSaveEnabled(this)) {
       this.saveChanges();
     }
-  },
+  }
 
   // watch for relationships loaded with data via links
   setupUnknownRelationshipLoadObservers() {
     this.eachRelationship((key) => {
       this.addObserver(key, this, 'observeUnknownRelationshipLoaded');
     });
-  },
+  }
 
   // when model updates, update the tracked state if using auto save
   saveOnUpdate() {
     if (Tracker.isAutoSaveEnabled(this) || Tracker.isIsDirtyEnabled(this)) {
       this.saveChanges();
     }
-  },
+  }
 
   // when model creates, update the tracked state if using auto save
   saveOnCreate() {
     if (Tracker.isAutoSaveEnabled(this) || Tracker.isIsDirtyEnabled(this)) {
       this.saveChanges();
     }
-  },
+  }
 
   // There is no didReload callback on models, so have to override reload
   reload() {
-    let promise = this._super(...arguments);
+    let promise = super.reload(...arguments);
     promise.then(() => {
       if (Tracker.isAutoSaveEnabled(this)) {
         this.saveChanges();
       }
     });
     return promise;
-  },
+  }
 
   // when model deletes, remove any tracked state
   clearSavedAttributes() {
     Tracker.clear(this);
-  },
+  }
 
-  observeUnknownRelationshipLoaded(sender, key/*, value, rev*/) {
+  observeUnknownRelationshipLoaded(sender, key) {
     if (Tracker.trackingIsSetup(this) && Tracker.isTracking(this, key)) {
       let saved = Tracker.saveLoadedRelationship(this, key);
       if (saved) {
@@ -192,4 +191,4 @@ Model.reopen({
       }
     }
   }
-});
+}
